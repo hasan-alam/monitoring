@@ -1,43 +1,66 @@
----
+version: '3.8'
+
 networks:
   loki:
-    driver: "bridge"  
+    driver: "bridge"
+
+volumes:
+  loki_data:
+  minio_data:
+  grafana_data:
+  prometheus_data:
+  alloy_data:
+  consul_data:
+
 services:
+  # Updated Loki services with proper dependencies
   read:
-    image: grafana/loki:latest
+    image: grafana/loki:3.4.2
+    container_name: loki-read
     command: "-config.file=/etc/loki/config.yaml -target=read"
     ports:
-      - 3101:3100
-      - 7946
-      - 9095
+      - "3101:3100"
     volumes:
       - ./loki-config.yaml:/etc/loki/config.yaml
+      - loki_data:/loki
+    environment:
+      - JAEGER_AGENT_HOST=jaeger
     depends_on:
-      - minio
+      minio:
+        condition: service_healthy
+      consul:
+        condition: service_healthy
     healthcheck:
       test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3100/ready || exit 1" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      interval: 15s
+      timeout: 15s
+      retries: 10
+      start_period: 30s
     networks:
       - loki
 
   write:
-    image: grafana/loki:latest
+    image: grafana/loki:3.4.2
+    container_name: loki-write
     command: "-config.file=/etc/loki/config.yaml -target=write"
     ports:
-      - 3102:3100
-      - 7946
-      - 9095
+      - "3102:3100"
     volumes:
       - ./loki-config.yaml:/etc/loki/config.yaml
+      - loki_data:/loki
+    environment:
+      - JAEGER_AGENT_HOST=jaeger
+    depends_on:
+      minio:
+        condition: service_healthy
+      consul:
+        condition: service_healthy
     healthcheck:
       test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3100/ready || exit 1" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    depends_on:
-      - minio
+      interval: 15s
+      timeout: 15s
+      retries: 10
+      start_period: 30s
     networks:
       - loki
 
@@ -46,11 +69,13 @@ services:
     volumes:
       - ./alloy-local-config.yaml:/etc/alloy/config.alloy:ro
       - /var/run/docker.sock:/var/run/docker.sock
-    command:  run --server.http.listen-addr=0.0.0.0:12345 --storage.path=/var/lib/alloy/data /etc/alloy/config.alloy
+      - alloy_data:/var/lib/alloy/data
+    command: run --server.http.listen-addr=0.0.0.0:12345 --storage.path=/var/lib/alloy/data /etc/alloy/config.alloy
     ports:
       - 12345:12345
     depends_on:
-      - gateway
+      gateway:
+        condition: service_healthy
     networks:
       - loki
 
@@ -71,12 +96,13 @@ services:
     ports:
       - 9000:9000
     volumes:
-      - ./.data/minio:/data
+      - minio_data:/data
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
-      interval: 15s
-      timeout: 20s
-      retries: 5
+      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/ready" ]  # Changed from /live to /ready
+      interval: 20s
+      timeout: 30s  # Increased timeout
+      retries: 10   # More retries
+      start_period: 30s  # Added grace period
     networks:
       - loki
 
@@ -87,16 +113,13 @@ services:
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
     depends_on:
-      - gateway
-    entrypoint:
-      - sh
-      - -euc
-      - |
-        /run.sh
+      gateway:
+        condition: service_healthy
     ports:
       - "3000:3000"
     volumes:
-      - ./datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml  
+      - ./datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml
+      - grafana_data:/var/lib/grafana
     healthcheck:
       test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1" ]
       interval: 10s
@@ -106,31 +129,38 @@ services:
       - loki
 
   backend:
-    image: grafana/loki:latest
+    image: grafana/loki:3.4.2
+    container_name: loki-backend
+    command: "-config.file=/etc/loki/config.yaml -target=backend -legacy-read-mode=false"
     volumes:
       - ./loki-config.yaml:/etc/loki/config.yaml
-    ports:
-      - "3100"
-      - "7946"
-    command: "-config.file=/etc/loki/config.yaml -target=backend -legacy-read-mode=false"
+      - loki_data:/loki
+    environment:
+      - JAEGER_AGENT_HOST=jaeger
     depends_on:
-      - gateway
+      minio:
+        condition: service_healthy
+      consul:
+        condition: service_healthy
     networks:
       - loki
-    
 
   gateway:
     image: nginx:latest
     depends_on:
-      - read
-      - write
+      read:
+        condition: service_healthy
+      write:
+        condition: service_healthy
+      consul:
+        condition: service_healthy
     entrypoint:
       - sh
       - -euc
       - |
         cat <<EOF > /etc/nginx/nginx.conf
         user  nginx;
-        worker_processes  5;  ## Default: 1
+        worker_processes  5;
 
         events {
           worker_connections   1000;
@@ -181,13 +211,40 @@ services:
     ports:
       - "3100:3100"
     healthcheck:
-      test: ["CMD", "service", "nginx", "status"]
+      test: ["CMD", "curl", "-f", "http://localhost:3100"]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
       - loki
-  
+    # Consul service with explicit version
+  # Consul service with explicit version
+  consul:
+    image: consul:1.15
+    container_name: consul
+    ports:
+      - "8500:8500"
+    volumes:
+      - consul_data:/consul/data
+    command: "agent -server -bootstrap-expect=1 -ui -client=0.0.0.0"
+    networks:
+      - loki
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8500/v1/status/leader"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Jaeger tracing
+  jaeger:
+    image: jaegertracing/all-in-one:1.48
+    container_name: jaeger
+    ports:
+      - "6831:6831/udp"
+      - "6832:6832/udp"
+      - "16686:16686"
+    networks:
+      - loki
   prometheus:
     image: prom/prometheus:v2.48.0
     container_name: prometheus
@@ -195,18 +252,62 @@ services:
       - "9090:9090"
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
     networks:
       - loki
-    
+
   student-service:
     image: student_ms:v1
     ports:
       - "8081:8081"
     networks:
-      - loki    
+      - loki
+    depends_on:
+      grafana:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8070/eureka/
+      - EUREKA_INSTANCE_PREFERIPADDRESS=true
+      - SPRING_APPLICATION_NAME=student-service
+
   course-service:
     image: course_ms:v1
     ports:
       - "8080:8080"
     networks:
-      - loki  
+      - loki
+    depends_on:
+      grafana:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8070/eureka/
+      - EUREKA_INSTANCE_PREFERIPADDRESS=true
+      - SPRING_APPLICATION_NAME=course-service
+
+  eureka:
+    image: eureka:v1
+    ports:
+      - "8070:8070"
+    networks:
+      - loki
+    healthcheck:
+      test: "curl --fail --silent localhost:8070/actuator/health | grep UP || exit 1"
+      interval: 30s
+      timeout: 30s
+      retries: 10
+      start_period: 60s
+    environment:
+      - EUREKA_CLIENT_REGISTER-WITH-EUREKA=false
+      - EUREKA_CLIENT_FETCH-REGISTRY=false
+      - EUREKA_SERVER_ENABLE-SELF-PRESERVATION=false
+      - EUREKA_INSTANCE_HOSTNAME=eureka
