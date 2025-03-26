@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 import com.hasan.student.dto.StudentCourseDto;
 
-@FeignClient(name = "course-service", url = "${course.service.url}")
+@FeignClient(name = "course-service"/*, url = "${course.service.url}"*/)
 public interface CourseClient {
 
     @GetMapping("/course/student/{studentId}")
