@@ -266,10 +266,11 @@ services:
       grafana:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      test: ["CMD", "sh", "-c", "curl --fail --silent localhost:8081/actuator/health | tr -d '\\n' | grep -q '\"status\":\"UP\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8070/eureka/
       - EUREKA_INSTANCE_PREFERIPADDRESS=true
@@ -285,16 +286,29 @@ services:
       grafana:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      test: ["CMD", "sh", "-c", "curl --fail --silent localhost:8080/actuator/health | tr -d '\\n' | grep -q '\"status\":\"UP\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
     deploy:
       replicas: 2 # two replicas will be created
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8070/eureka/
       - EUREKA_INSTANCE_PREFERIPADDRESS=true
       - SPRING_APPLICATION_NAME=course-service
+
+  gwserver:
+    image: gwserver:v1
+    container_name: gwserver
+    ports:
+      - "8079:8079"
+    networks:
+      - loki
+    environment:
+      - SPRING_APPLICATION_NAME=gwserver
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8070/eureka/
+      - EUREKA_INSTANCE_PREFERIPADDRESS=true
 
   eureka:
     image: eureka:v1
@@ -303,7 +317,7 @@ services:
     networks:
       - loki
     healthcheck:
-      test: "curl --fail --silent localhost:8070/actuator/health | grep UP || exit 1"
+      test: ["CMD", "sh", "-c", "curl --fail --silent localhost:8070/actuator/health | tr -d '\\n' | grep -q '\"status\":\"UP\"'"]
       interval: 30s
       timeout: 30s
       retries: 10
@@ -313,3 +327,4 @@ services:
       - EUREKA_CLIENT_FETCH-REGISTRY=false
       - EUREKA_SERVER_ENABLE-SELF-PRESERVATION=false
       - EUREKA_INSTANCE_HOSTNAME=eureka
+    
