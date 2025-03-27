@@ -7,14 +7,16 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
+        <module name="eurekaserver" />
+        <module name="gwserver" />
         <module name="course_ms" />
         <module name="student_ms" />
-        <module name="eurekaserver" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
       <module name="course_ms" target="17" />
       <module name="eurekaserver" target="17" />
+      <module name="gwserver" target="17" />
       <module name="student_ms" target="17" />
     </bytecodeTargetLevel>
   </component>
@@ -22,6 +24,7 @@
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="course_ms" options="-parameters" />
       <module name="eurekaserver" options="-parameters" />
+      <module name="gwserver" options="-parameters" />
       <module name="student_ms" options="-parameters" />
     </option>
   </component>

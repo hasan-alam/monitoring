@@ -106,6 +106,18 @@ services:
     networks:
       - loki
 
+  tempo:
+    image: grafana/tempo:2.6.1
+    container_name: tempo
+    command: -config.file /etc/tempo-config.yml
+    ports:
+      - "3110:3100"
+      - "4318:4318"
+    volumes:
+      - ./tempo.yml:/etc/tempo-config.yml
+    networks:
+      - loki
+
   grafana:
     image: grafana/grafana:latest
     environment:
@@ -258,6 +270,8 @@ services:
 
   student-service:
     image: student_ms:v1
+    volumes:
+      - ./libs/opentelemetry-javaagent.jar:/app/libs/opentelemetry-javaagent-2.11.0.jar
     ports:
       - "8081:8081"
     networks:
@@ -275,9 +289,15 @@ services:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8070/eureka/
       - EUREKA_INSTANCE_PREFERIPADDRESS=true
       - SPRING_APPLICATION_NAME=student-service
+      - JAVA_TOOL_OPTIONS=-javaagent:/app/libs/opentelemetry-javaagent-2.11.0.jar
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4318
+      - OTEL_METRICS_EXPORTER=none
+      - OTEL_SERVICE_NAME=student-service
 
   course-service:
     image: course_ms:v1
+    volumes:
+      - ./libs/opentelemetry-javaagent.jar:/app/libs/opentelemetry-javaagent-2.11.0.jar
     expose:
       - "8080" #Let the docker engine set this port to any of the replicas by load balancing
     networks:
@@ -297,10 +317,16 @@ services:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8070/eureka/
       - EUREKA_INSTANCE_PREFERIPADDRESS=true
       - SPRING_APPLICATION_NAME=course-service
+      - JAVA_TOOL_OPTIONS=-javaagent:/app/libs/opentelemetry-javaagent-2.11.0.jar
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4318
+      - OTEL_METRICS_EXPORTER=none
+      - OTEL_SERVICE_NAME=course-service
 
   gwserver:
     image: gwserver:v1
     container_name: gwserver
+    volumes:
+      - ./libs/opentelemetry-javaagent.jar:/app/libs/opentelemetry-javaagent-2.11.0.jar
     ports:
       - "8079:8079"
     networks:
@@ -309,7 +335,10 @@ services:
       - SPRING_APPLICATION_NAME=gwserver
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8070/eureka/
       - EUREKA_INSTANCE_PREFERIPADDRESS=true
-
+      - JAVA_TOOL_OPTIONS=-javaagent:/app/libs/opentelemetry-javaagent-2.11.0.jar
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4318
+      - OTEL_METRICS_EXPORTER=none
+      - OTEL_SERVICE_NAME=gwserver
   eureka:
     image: eureka:v1
     ports:
