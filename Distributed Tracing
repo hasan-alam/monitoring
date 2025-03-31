@@ -1,0 +1,47 @@
+Distributed Tracing Implementation
+==================================
+**In Micro services:**
+
+1. pom.xml
+
+  <dependency>
+    <groupId>io.opentelemetry.javaagent</groupId>
+  	<artifactId>opentelemetry-javaagent</artifactId>
+  	<version>${otelVersion}</version>
+  	<scope>runtime</scope>
+  </dependency>
+  
+2. application.properties
+  #Logging related properties
+  logging.level.com.hasan.course=DEBUG
+  logging.pattern.level="%5p [${spring.application.name},%X{trace_id},%X{span_id}]"
+   
+3. Add tempo service in docker compose as below:
+   tempo:
+    image: grafana/tempo:2.6.1
+    container_name: tempo
+    command: -config.file /etc/tempo-config.yml
+    ports:
+      - "3110:3100"
+      - "4318:4318"
+    volumes:
+      - ./tempo.yml:/etc/tempo-config.yml
+    networks:
+      - loki
+  
+4. Add the tempo.yml file
+5. Add tempo data source in grafana as beloW:
+   - name: Tempo
+    type: tempo
+    uid: tempo
+    url: http://tempo:3100
+    access: proxy
+    orgId: 1
+    basicAuth: false
+    isDefault: false
+    version: 1
+    editable: true
+    jsonData:
+      httpMethod: GET
+      serviceMap:
+        datasourceUid: 'prometheus'
