@@ -1,0 +1,16 @@
+Feign Client Implementation
+============================
+1. Add feign client dependency in pom.xml as
+  <dependency>
+  		<groupId>org.springframework.cloud</groupId>
+  		<artifactId>spring-cloud-starter-openfeign</artifactId>
+	</dependency>
+ 2. Add @EnableFeignClients annotation under the @SpringBootApplication (main class)
+ 3. Add an iterface containing methods with same arguments and return types; for example:
+   @FeignClient(name = "course-service")//Service which will be invoked
+   public interface CourseClient {
+    @GetMapping("/course/student/{studentId}") //End point which will be invoked
+    StudentCourseDto getCourseListByStudentId(@PathVariable("studentId") String studentId); //Use same signature
+  }
+
+4. All this method
