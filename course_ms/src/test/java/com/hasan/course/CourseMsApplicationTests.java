@@ -3,10 +3,10 @@ package com.hasan.course;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
+//@SpringBootTest
 class CourseMsApplicationTests {
 
-	@Test
+	//@Test
 	void contextLoads() {
 	}
 

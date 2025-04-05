@@ -1,11 +1,18 @@
 package com.hasan.course.controller;
 
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.hasan.course.dto.StudentCourseDto;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +51,16 @@ public class HelloCourse {
         logger.info("Now:"+new Date());
         return new String("Slept for "+sleepTime);
     }
-    
+    @GetMapping(value = "/student/{studentId}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public StudentCourseDto getCourseListByStudentId(@PathVariable String studentId) {
+        StudentCourseDto dto = new StudentCourseDto();
+        dto.setStudentName(studentId);
+        logger.info("Retriving course List for student ID:"+studentId);
+        String[] array = {"CSE1001", "EEE1005", "MATH1008"};
+        ArrayList<String> list = new ArrayList<String>();
+        Collections.addAll(list, array);
+        dto.setCourseList(list);
+        return dto;
+    }
     
 }

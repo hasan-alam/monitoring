@@ -3,6 +3,8 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/course_ms/course_ms.iml" filepath="$PROJECT_DIR$/course_ms/course_ms.iml" />
+      <module fileurl="file://$PROJECT_DIR$/eurekaserver/eurekaserver.iml" filepath="$PROJECT_DIR$/eurekaserver/eurekaserver.iml" />
+      <module fileurl="file://$PROJECT_DIR$/gwswerver/gwserver.iml" filepath="$PROJECT_DIR$/gwswerver/gwserver.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/monitoring.iml" filepath="$PROJECT_DIR$/.idea/monitoring.iml" />
       <module fileurl="file://$PROJECT_DIR$/student_ms/student_ms.iml" filepath="$PROJECT_DIR$/student_ms/student_ms.iml" />
     </modules>
