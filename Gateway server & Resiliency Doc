@@ -1,0 +1,75 @@
+=================================================================================
+1. Create the Gateway Server project and Do followings
+=================================================================================
+a. pom.xml
+=================================================================================
+<dependency>
+	<groupId>org.springframework.boot</groupId>
+	<artifactId>spring-boot-starter-actuator</artifactId>
+</dependency>
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-gateway</artifactId>
+</dependency>
+
+b. application.properties
+=================================================================================
+spring.application.name=gwswerver
+server.port=8079
+
+#Gateway Server Configurations
+#Enables/disables the entire Gateway runtime
+spring.cloud.gateway.enabled=true
+# below property Enables auto-creation of routes for services registered in a service discovery (e.g., Eureka, Consul, Nacos)
+spring.cloud.gateway.discovery.locator.enabled=true
+# In Eureka all the services are in Uppercase and for this the URL needs to be Upper case which looks odd, to make the URL lower case below property is used 
+spring.cloud.gateway.discovery.locator.lower-case-service-id=true
+management.endpoint.gateway.access=UNRESTRICTED
+
+c. Set Routings and Resilincy
+=================================================================================
+* In a configuration class or main class, you can define the routes and resiliency settings using the `RouteLocator` bean. Here's an example of how to do this:
+
+    @Bean
+	public RouteLocator monitoringRouteConfig(RouteLocatorBuilder routeLocatorBuilder) {
+		return routeLocatorBuilder.routes()
+				.route(p -> p
+						.path("/monitoring/course/**")
+						.filters( f -> f.rewritePath("/monitoring/course/(?<segment>.*)","/${segment}")
+								.addResponseHeader("X-Response-Time", LocalDateTime.now().toString())
+								.circuitBreaker(config -> config.setName("courseCB")
+										.setFallbackUri("forward:/fallback/course")))
+						.uri("lb://COURSE-SERVICE"))
+				.route(p -> p
+						.path("/monitoring/student/**")
+						.filters( f -> f.rewritePath("/monitoring/student/(?<segment>.*)","/${segment}")
+								.addResponseHeader("X-Response-Time", LocalDateTime.now().toString())
+								.circuitBreaker(config -> config.setName("studentCB")
+										.setFallbackUri("forward:/fallback/student")))
+						.uri("lb://STUDENT-SERVICE"))
+				.build();
+	}
+
+
+* And in the properties file, you can define the more properties of circuit breakers like:
+
+# Resilience4J Circuit Breaker - Student Service
+resilience4j.circuitbreaker.instances.studentCB.failure-rate-threshold=50
+resilience4j.circuitbreaker.instances.studentCB.wait-duration-in-open-state=30s
+resilience4j.circuitbreaker.instances.studentCB.permitted-number-of-calls-in-half-open-state=2
+resilience4j.circuitbreaker.instances.studentCB.sliding-window-type=COUNT_BASED
+resilience4j.circuitbreaker.instances.studentCB.sliding-window-size=8
+resilience4j.circuitbreaker.instances.studentCB.minimum-number-of-calls=8
+resilience4j.timelimiter.instances.studentCB.timeout-duration=2s
+
+# Resilience4J Circuit Breaker - Course Service
+resilience4j.circuitbreaker.instances.courseCB.failure-rate-threshold=50
+resilience4j.circuitbreaker.instances.courseCB.wait-duration-in-open-state=30s
+resilience4j.circuitbreaker.instances.courseCB.permitted-number-of-calls-in-half-open-state=2
+resilience4j.circuitbreaker.instances.courseCB.sliding-window-type=COUNT_BASED
+resilience4j.circuitbreaker.instances.courseCB.sliding-window-size=8
+resilience4j.circuitbreaker.instances.courseCB.minimum-number-of-calls=8
+resilience4j.timelimiter.instances.courseCB.timeout-duration=2s
+
+#Retries
+spring.cloud.gateway.default-filters[0]=Retry=3,SERVER_ERROR,GET,TimeoutException,IOException,100ms,1s,2,false

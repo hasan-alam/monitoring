@@ -1,0 +1,68 @@
+
+
+=================================================================================
+1. Create Eureka Server for Service Discovery and Do followings
+=================================================================================
+
+a. pom.xml
+=================================================================================
+        <dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-netflix-eureka-server</artifactId>
+		</dependency>
+
+b. Enable Eureka Server
+=================================================================================
+Use @EnableEurekaServer in the main class to enable Eureka Server.
+
+c. application.properties file configuration
+=================================================================================
+spring.application.name=eureka
+server.port=8070
+eureka.instance.hostname=eureka
+
+# Prevent the server from registering itself
+eureka.client.register-with-eureka=false
+eureka.client.fetch-registry=false
+eureka.server.enable-self-preservation=false
+#eureka.client.service-url.defaultZone=http://${eureka.instance.hostname}:${server.port}/eureka/
+
+# Actuator Endpoints Configuration
+management.endpoints.web.exposure.include=*
+management.endpoint.health.show-details=always
+
+# Liveness and Readiness Probes
+management.health.livenessstate.enabled=true
+management.health.readinessstate.enabled=true
+
+
+=================================================================================
+2. Changes in the Client Application or Microservices 
+=================================================================================
+a. pom.xml
+=================================================================================
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+b. application.properties file configuration
+=================================================================================
+
+spring.application.name=course-service
+server.port=8080
+# Eureka Client Configuration
+eureka.client.register-with-eureka=true
+eureka.client.fetch-registry=true
+eureka.client.service-url.defaultZone=http://eureka:8070/eureka/
+eureka.instance.prefer-ip-address=true
+info.app.name=course_ms
+info.app.version=v1
+info.app.description=This is the course micro service
