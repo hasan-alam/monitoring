@@ -11,4 +11,12 @@ scrape_configs:
     metrics_path: '/actuator/prometheus'
     static_configs:
       - targets: [ 'student-service:8081' ]
+  - job_name: 'notification'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: [ 'notification:9010' ]
+  - job_name: 'gwserver'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: [ 'gwserver:8079' ]
   

@@ -67,3 +67,18 @@ resilience4j.timelimiter.instances.courseCB.timeout-duration=2s
 
 # Retry Configuration for both services (Commented off intentionally as we don't need this)
 #spring.cloud.gateway.default-filters[0]=Retry=3,SERVER_ERROR,GET,POST,TimeoutException,IOException,100ms,1s,2,false
+
+# Function definition (multiple functions separated by '|')
+spring.cloud.function.definition=updateNotificationStatus
+
+# Spring Cloud Stream Bindings
+spring.cloud.stream.bindings.updateNotificationStatus-in-0.destination=notification-sent
+spring.cloud.stream.bindings.updateNotificationStatus-in-0.group=${spring.application.name}
+spring.cloud.stream.bindings.sendNotification-out-0.destination=send-notification
+
+# RabbitMQ connection
+spring.rabbitmq.host=localhost
+spring.rabbitmq.port=5672
+spring.rabbitmq.username=guest
+spring.rabbitmq.password=guest
+spring.rabbitmq.connection-timeout=10s

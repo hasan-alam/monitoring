@@ -238,6 +238,7 @@ services:
       - "8500:8500"
     volumes:
       - consul_data:/consul/data
+    #command: "agent -server -bootstrap-expect=1 -ui -client=0.0.0.0 -server-rejoin-age-max=0s"  
     command: "agent -server -bootstrap-expect=1 -ui -client=0.0.0.0"
     networks:
       - loki
@@ -246,7 +247,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-
   # Jaeger tracing
   jaeger:
     image: jaegertracing/all-in-one:1.48
@@ -322,6 +322,34 @@ services:
       - OTEL_METRICS_EXPORTER=none
       - OTEL_SERVICE_NAME=course-service
 
+  notification:
+    image: notification:v1
+    volumes:
+      - ./libs/opentelemetry-javaagent.jar:/app/libs/opentelemetry-javaagent-2.11.0.jar
+    expose:
+      - "9010" #Let the docker engine set this port to any of the replicas by load balancing
+    networks:
+      - loki
+    depends_on:
+      grafana:
+        condition: service_healthy
+      rabbit:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "sh", "-c", "curl --fail --silent localhost:8080/actuator/health | tr -d '\\n' | grep -q '\"status\":\"UP\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka:8070/eureka/
+      - EUREKA_INSTANCE_PREFERIPADDRESS=true
+      - SPRING_APPLICATION_NAME=notification
+      - JAVA_TOOL_OPTIONS=-javaagent:/app/libs/opentelemetry-javaagent-2.11.0.jar
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://tempo:4318
+      - OTEL_METRICS_EXPORTER=none
+      - OTEL_SERVICE_NAME=notification
+
   gwserver:
     image: gwserver:v1
     container_name: gwserver
@@ -356,4 +384,21 @@ services:
       - EUREKA_CLIENT_FETCH-REGISTRY=false
       - EUREKA_SERVER_ENABLE-SELF-PRESERVATION=false
       - EUREKA_INSTANCE_HOSTNAME=eureka
-    
+
+  rabbit:
+    image: rabbitmq:3.12-management
+    hostname: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: rabbitmq-diagnostics check_port_connectivity
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    networks:
+      - loki  

@@ -45,3 +45,4 @@ Distributed Tracing Implementation
       httpMethod: GET
       serviceMap:
         datasourceUid: 'prometheus'
+6. look and understant the prometheus.yml

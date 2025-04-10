@@ -1,0 +1,95 @@
+spring:
+  application:
+    name: gwswerver
+  cloud:
+    gateway:
+      enabled: true
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+    function:
+      definition: updateNotificationStatus
+    stream:
+      bindings:
+        updateNotificationStatus-in-0:
+          destination: notification-sent
+          group: ${spring.application.name}
+        sendNotification-out-0:
+          destination: send-notification
+  rabbitmq:
+    host: rabbitmq
+    port: 5672
+    username: guest
+    password: guest
+    connection-timeout: 10s
+
+server:
+  port: 8079
+
+management:
+  metrics:
+    tags:
+      application: ${spring.application.name}
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+    prometheus:
+      access: UNRESTRICTED
+    health:
+      access: UNRESTRICTED
+    info:
+      access: UNRESTRICTED
+    metrics:
+      access: UNRESTRICTED
+    gateway:
+      access: UNRESTRICTED
+  endpoint:
+    health:
+      show-details: always
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://eureka:8070/eureka/
+  instance:
+    prefer-ip-address: true
+
+info:
+  app:
+    name: gwserver
+    version: v1
+    description: This is the Gateway Server
+
+logging:
+  level:
+    com.hasan.gwserver: DEBUG
+  pattern:
+    level: "%5p [${spring.application.name},%X{trace_id},%X{span_id}]"
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      studentCB:
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 2
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 8
+        minimum-number-of-calls: 8
+      courseCB:
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 2
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 8
+        minimum-number-of-calls: 8
+  timelimiter:
+    instances:
+      studentCB:
+        timeout-duration: 2s
+      courseCB:
+        timeout-duration: 2s

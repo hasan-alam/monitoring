@@ -9,10 +9,10 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.hasan</groupId>
-	<artifactId>gwserver</artifactId>
+	<artifactId>notification</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>gwserver</name>
-	<description>Gateway server</description>
+	<name>notification</name>
+	<description>Notification Server</description>
 	<url/>
 	<licenses>
 		<license/>
@@ -32,27 +32,6 @@
 		<otelVersion>2.11.0</otelVersion>
 	</properties>
 	<dependencies>
-		<dependency>
-      		<groupId>org.projectlombok</groupId>
-      		<artifactId>lombok</artifactId>
-      		<optional>true</optional>
-    	</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-actuator</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.cloud</groupId>
-			<artifactId>spring-cloud-starter-gateway</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.cloud</groupId>
-			<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.cloud</groupId>
-			<artifactId>spring-cloud-starter-circuitbreaker-reactor-resilience4j</artifactId>
-		</dependency>
 		<!--Open telemetry dependency [S]-->
 		<dependency>
 			<groupId>io.opentelemetry.javaagent</groupId>
@@ -61,6 +40,21 @@
 			<scope>runtime</scope>
 		</dependency>
 		<!--Open telemetry dependency [E]-->
+		<!-- Eureka Client [S]-->
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+			<!--<version>4.1.0</version>-->
+		</dependency>
+		<!-- Eureka Client [E]-->
+		<dependency>
+      		<groupId>io.micrometer</groupId>
+      		<artifactId>micrometer-registry-prometheus</artifactId>
+    	</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
 		<!--Spring cloud stream dependencies for Messaging with RabbitMQ [S]-->
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
@@ -70,15 +64,15 @@
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-stream-binder-rabbit</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-stream-test-binder</artifactId>
+			<scope>test</scope>
+		</dependency>
 		<!--Spring cloud stream dependencies for Messaging with RabbitMQ [E]-->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>io.projectreactor</groupId>
-			<artifactId>reactor-test</artifactId>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
